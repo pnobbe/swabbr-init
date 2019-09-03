@@ -1,0 +1,7 @@
+apply from: "$rootDir/common-android-library.gradle"
+apply from: "$rootDir/jacoco.gradle"
+
+dependencies {
+    implementation SupportLibraries.appcompat
+    implementation GoogleLibraries.playCore
+}

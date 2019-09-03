@@ -1,2 +1,1 @@
-include ':app'
-rootProject.name='Swabbr'
+include Modules.app, Modules.navigation, Modules.presentation, Modules.network, Modules.cache, Modules.swabbr
