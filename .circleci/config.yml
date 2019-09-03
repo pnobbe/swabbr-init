@@ -3,6 +3,8 @@
 # Check https://circleci.com/docs/2.0/language-android/ for more details
 #
 version: 2.1
+orbs:
+  codecov: codecov/codecov@1.0.4
 jobs:
   build:
     docker:
@@ -33,3 +35,5 @@ jobs:
           paths:
             - ~/.gradle
           key: gradle-{{ checksum "build.gradle" }}-{{ checksum  "buildSrc/src/main/java/Dependencies.kt" }}-{{ checksum  "gradle/wrapper/gradle-wrapper.properties" }}
+      - codecov/upload:
+          file: {{ coverage_report_filepath }}
