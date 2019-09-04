@@ -42,7 +42,6 @@ before_script:
     #- emulator -avd test -no-skin -no-audio -no-window &    #Start emulator
 
 script:
-    - ./gradlew check #Local checks
     - ./gradlew detekt #Run Detekt
     - ./gradlew ktlint #Run ktlint
     - ./gradlew lintDebug #Run lint debugger
