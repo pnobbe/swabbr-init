@@ -24,12 +24,14 @@ jobs:
     steps:
       - checkout
       - *restore_cache
-      - run: Download Dependencies
-          command: ./gradlew dependencies
       - run:
           name: Set Permissions
           command: chmod +x ./gradlew
-      - run: Build
+      - run:
+          name: Download Dependencies
+          command: ./gradlew dependencies
+      - run:
+          name: Build
           command: ./gradlew assembleDebugUnittest
       - save_cache:
           paths:
