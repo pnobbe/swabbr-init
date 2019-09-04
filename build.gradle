@@ -30,6 +30,12 @@ allprojects {
         google()
         jcenter()
     }
-}
 
-task x(type: GradleBuild) { tasks = ["detekt", "ktlint", "lintDebug", "testDebugUnitTest"] }
+    tasks.withType(Test) { // Get better unit test logging when building
+        testLogging {
+            exceptionFormat "full"
+            events "started", "skipped", "passed", "failed"
+            showStandardStreams true
+        }
+    }
+}
