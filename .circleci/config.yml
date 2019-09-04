@@ -5,8 +5,17 @@
 version: 2.1
 orbs:
   codecov: codecov/codecov@1.0.4
+
+restore_cache: &restore_cache
+  restore_cache:
+    keys:
+      - builds-{{ .Revision }}
+      - app-builds-{{ .Revision }}
+      - gradle-{{ checksum "build.gradle" }}-{{ checksum  "buildSrc/src/main/java/Dependencies.kt" }}-{{ checksum  "gradle/wrapper/gradle-wrapper.properties" }}
+
 jobs:
   build:
+    working_directory: ~/swabbr-init
     docker:
       - image: circleci/android:api-28
     environment:
@@ -14,11 +23,36 @@ jobs:
       JVM_OPTS: -Xmx4g
     steps:
       - checkout
-      - restore_cache:
-          key: gradle-{{ checksum "build.gradle" }}-{{ checksum  "buildSrc/src/main/java/Dependencies.kt" }}-{{ checksum  "gradle/wrapper/gradle-wrapper.properties" }}
+      - *restore_cache
+      - run: Download Dependencies
+               - command: ./gradlew dependencies
       - run:
-          name: Permissions
+          name: Set Permissions
           command: chmod +x ./gradlew
+      - run: Build
+          command: ./gradlew assembleDebugUnittest
+      - save_cache:
+          paths:
+            - ~/.gradle
+          key: gradle-{{ checksum "build.gradle" }}-{{ checksum  "buildSrc/src/main/java/Dependencies.kt" }}-{{ checksum  "gradle/wrapper/gradle-wrapper.properties" }}
+      - save_cache:
+          paths:
+            - ~/swabbr-init/build
+          key: builds-{{ .Revision }}
+      - save_cache:
+          paths:
+            - ~/swabbr-init/app/build
+          key: app-builds-{{ .Revision }}
+  test:
+    working_directory: ~/swabbr-init
+    docker:
+      - image: circleci/android:api-28
+    environment:
+      GRADLE_OPTS: -Xmx4g -Dorg.gradle.daemon=false
+      JVM_OPTS: -Xmx4g
+    steps:
+      - checkout
+      - *restore_cache
       - run:
           name: Run Detekt
           command: ./gradlew detekt
@@ -31,9 +65,14 @@ jobs:
       - run:
           name: Run Unit Tests
           command: ./gradlew testDebugUnitTest
-      - save_cache:
-          paths:
-            - ~/.gradle
-          key: gradle-{{ checksum "build.gradle" }}-{{ checksum  "buildSrc/src/main/java/Dependencies.kt" }}-{{ checksum  "gradle/wrapper/gradle-wrapper.properties" }}
+      - run:
+          name: Run Jacoco
+          command: ./gradlew
       - codecov/upload:
-          file: {{ coverage_report_filepath }}
+          file: swabbr/build
+workflows:
+  version: 2
+  build-and-test:
+    jobs:
+      - build
+      - test: { requires: [build] }
