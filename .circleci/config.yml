@@ -9,8 +9,6 @@ orbs:
 restore_cache: &restore_cache
   restore_cache:
     keys:
-      - builds-{{ .Revision }}
-      - app-builds-{{ .Revision }}
       - gradle-{{ checksum "build.gradle" }}-{{ checksum  "buildSrc/src/main/java/Dependencies.kt" }}-{{ checksum  "gradle/wrapper/gradle-wrapper.properties" }}
 
 jobs:
@@ -37,15 +35,25 @@ jobs:
           paths:
             - ~/.gradle
           key: gradle-{{ checksum "build.gradle" }}-{{ checksum  "buildSrc/src/main/java/Dependencies.kt" }}-{{ checksum  "gradle/wrapper/gradle-wrapper.properties" }}
-      - save_cache:
-          paths:
-            - ~/swabbr-init/build
-          key: builds-{{ .Revision }}
-      - save_cache:
-          paths:
-            - ~/swabbr-init/app/build
-          key: app-builds-{{ .Revision }}
   test:
+    working_directory: ~/swabbr-init
+    docker:
+      - image: circleci/android:api-28
+    environment:
+      GRADLE_OPTS: -Xmx4g -Dorg.gradle.daemon=false
+      JVM_OPTS: -Xmx4g
+    steps:
+      - checkout
+      - *restore_cache
+      - run:
+          name: Run Unit Tests
+          command: ./gradlew testDebugUnitTest
+      - run:
+          name: Run Jacoco
+          command: ./gradlew
+      - codecov/upload:
+          file: swabbr/build
+  quality:
     working_directory: ~/swabbr-init
     docker:
       - image: circleci/android:api-28
@@ -64,17 +72,14 @@ jobs:
       - run:
           name: Run Lint
           command: ./gradlew lintDebug
-      - run:
-          name: Run Unit Tests
-          command: ./gradlew testDebugUnitTest
-      - run:
-          name: Run Jacoco
-          command: ./gradlew
-      - codecov/upload:
-          file: swabbr/build
 workflows:
   version: 2
-  build-and-test:
+  build_and_test:
     jobs:
       - build
-      - test: { requires: [build] }
+      - test:
+          requires:
+            - build
+      - quality:
+          requires:
+            - build
